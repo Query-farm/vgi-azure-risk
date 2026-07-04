@@ -11,8 +11,8 @@
 
 import { defineTableFunction, secretsOfType, type OutputCollector } from "@query-farm/vgi";
 import { Utf8, Int64 } from "@query-farm/apache-arrow";
-import { collectWatermark, EPOCH_ISO, type RiskCollectionSpec } from "./risk-watermark.js";
-import { schemaFor, buildWatermarkBatch } from "./schema.js";
+import { collectWatermark, EPOCH_ISO } from "./risk-watermark.js";
+import { schemaFor, buildWatermarkBatch, type RiskCollectionSpec } from "./schema.js";
 import type { GraphClient } from "@vgi-azure/graph-core";
 
 export type ClientFactory = (secret: Record<string, unknown>) => GraphClient;
