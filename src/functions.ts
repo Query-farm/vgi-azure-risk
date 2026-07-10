@@ -63,6 +63,23 @@ export function makeRiskFunction(
     args: { since: new Utf8(), safety_lag: new Utf8(), page_size: new Int64() },
     // Optional args → argDefaults, so they are addressable by name (since := …).
     argDefaults: { since: "", safety_lag: "PT10M", page_size: 500 },
+    argDocs: {
+      since:
+        "A previously persisted watermark (the `_watermark_next` value from a prior scan's marker row), an ISO-8601 instant. The scan returns rows whose time field is `>=` this value. Empty (the default) performs a full sync from epoch.",
+      safety_lag:
+        "ISO-8601 duration (e.g. `PT10M`, `PT1H`, `P1D`) subtracted from the high-water mark before it is committed, so late-scored risk in the lag window is re-read on the next scan rather than lost. Defaults to `PT10M`; anything unparseable falls back to the 10-minute default.",
+      page_size:
+        "Maps to the Microsoft Graph `$top` page size; clamped to the range 1..1000 (defaults to 500). Controls request paging only, not the total number of rows returned.",
+    },
+    examples: spec.examples,
+    tags: {
+      "vgi.category": "identity-protection-risk",
+      "vgi.title": spec.title,
+      "vgi.keywords": JSON.stringify(spec.keywords),
+      "vgi.doc_llm": spec.docLlm,
+      "vgi.doc_md": spec.docMd,
+      "vgi.result_columns_schema": JSON.stringify(spec.resultColumns),
+    },
     onBind: () => ({ outputSchema: schema }),
     initialState: (p) => ({
       done: false,
