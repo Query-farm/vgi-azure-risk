@@ -113,7 +113,7 @@ export const RISKY_USERS: RiskCollectionSpec = {
     "and risk_state (atRisk/confirmedCompromised/dismissed/remediated). This is the SOURCE OF TRUTH for " +
     "the current verdict — any risk_detections row MUST be reconciled against the matching risky_users " +
     "row (join risk_detections.user_id <-> risky_users.id) before acting, because a detection's own " +
-    "risk_state can be stale. Incremental via a lagged TIMESTAMP watermark on risk_last_updated_date_time: " +
+    "risk_state can be stale. Incremental via a lagged `TIMESTAMP` watermark on risk_last_updated_date_time: " +
     "pass since := <prior _watermark_next>, or omit since for a full sync from epoch. Read data rows with " +
     "WHERE _row_kind IS NULL and persist the marker row's _watermark_next as the next cursor. Requires an " +
     "app-only azure_graph secret with IdentityRiskyUser.Read.All and an Entra ID P2 license.",
@@ -123,7 +123,7 @@ export const RISKY_USERS: RiskCollectionSpec = {
     "`identityProtection/riskyUsers` with a lagged-watermark cursor on `risk_last_updated_date_time`.\n\n" +
     "Read data rows with `WHERE _row_kind IS NULL`; persist the marker row's `_watermark_next` and replay " +
     "it as `since` on the next scan. This table is the source of truth for the current verdict — reconcile " +
-    "any `risk_detections` row against it (join `user_id` <-> `id`). See the examples for full, runnable queries.",
+    "any `risk_detections` row against it (join `user_id` <-> `id`).",
   resultColumns: [
     {
       name: "id",
@@ -211,7 +211,7 @@ export const RISKY_SERVICE_PRINCIPALS: RiskCollectionSpec = {
     "Microsoft Graph. Reach for it to answer 'which app/service-principal identities are risky right now', " +
     "reading risk_level and risk_state on each SP. Source of truth for the current SP verdict; dismissal is " +
     "a risk_state field change, not a delete, so absence from a page never means 'cleared'. Incremental via " +
-    "a lagged TIMESTAMP watermark on risk_last_updated_date_time: pass since := <prior _watermark_next>, or " +
+    "a lagged `TIMESTAMP` watermark on risk_last_updated_date_time: pass since := <prior _watermark_next>, or " +
     "omit since for a full sync from epoch. Read data rows with WHERE _row_kind IS NULL and persist the " +
     "marker row's _watermark_next. REQUIRES its own scope IdentityRiskyServicePrincipal.Read.All (the " +
     "user-risk scope 403s here) plus an app-only azure_graph secret and an Entra ID P2 license.",
@@ -221,8 +221,7 @@ export const RISKY_SERVICE_PRINCIPALS: RiskCollectionSpec = {
     "`identityProtection/riskyServicePrincipals` with a lagged-watermark cursor on " +
     "`risk_last_updated_date_time`.\n\n" +
     "Read data rows with `WHERE _row_kind IS NULL`; persist the marker row's `_watermark_next` as the next " +
-    "`since`. Requires `IdentityRiskyServicePrincipal.Read.All` — the user-risk scope does not subsume it. " +
-    "See the examples for full, runnable queries.",
+    "`since`. Requires `IdentityRiskyServicePrincipal.Read.All` — the user-risk scope does not subsume it.",
   resultColumns: [
     {
       name: "id",
@@ -312,7 +311,7 @@ export const RISK_DETECTIONS: RiskCollectionSpec = {
     "detection's own risk_state transitions in place WITHOUT moving detected_date_time, so this cursor " +
     "never re-surfaces a verdict change — consumers MUST join user_id <-> risky_users.id and read the " +
     "CURRENT verdict there, never act on the detection's own (possibly stale) risk_state. Incremental via a " +
-    "lagged TIMESTAMP watermark on detected_date_time: pass since := <prior _watermark_next>, or omit since " +
+    "lagged `TIMESTAMP` watermark on detected_date_time: pass since := <prior _watermark_next>, or omit since " +
     "for a full sync from epoch. Read data rows with WHERE _row_kind IS NULL and persist the marker row's " +
     "_watermark_next. Requires an app-only azure_graph secret with IdentityRiskEvent.Read.All and Entra ID P2.",
   docMd:
@@ -321,7 +320,7 @@ export const RISK_DETECTIONS: RiskCollectionSpec = {
     "`identityProtection/riskDetections` with a lagged-watermark cursor on `detected_date_time`.\n\n" +
     "Read data rows with `WHERE _row_kind IS NULL`; persist the marker row's `_watermark_next` as the next " +
     "`since`. A detection's `risk_state` can be stale — reconcile against `risky_users` (join `user_id` " +
-    "<-> `id`) for the current verdict. See the examples for full, runnable queries.",
+    "<-> `id`) for the current verdict.",
   resultColumns: [
     {
       name: "id",

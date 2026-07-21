@@ -25,7 +25,7 @@ const CATALOG_TAGS: Record<string, string> = {
     "Microsoft Entra ID Protection risk feed as SQL table functions over Microsoft Graph. Reach for it to " +
     "sync who and what is risky in the tenant: risky_users (current per-user risk STATE), " +
     "risky_service_principals (current per-workload-identity risk STATE), and risk_detections (immutable " +
-    "detection EVENTS). Each is incremental via a lagged TIMESTAMP watermark — pass since := <prior " +
+    "detection EVENTS). Each is incremental via a lagged `TIMESTAMP` watermark — pass since := <prior " +
     "_watermark_next>, or omit since for a full sync from epoch; read data rows with WHERE _row_kind IS " +
     "NULL and persist the marker row's _watermark_next. The STATE tables are the source of truth for the " +
     "current verdict: any risk_detections row MUST be reconciled against risky_users (join user_id <-> id) " +

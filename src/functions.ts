@@ -79,6 +79,12 @@ export function makeRiskFunction(
       "vgi.doc_llm": spec.docLlm,
       "vgi.doc_md": spec.docMd,
       "vgi.result_columns_schema": JSON.stringify(spec.resultColumns),
+      // The described example carrier (VGI515): duckdb_functions().examples (fed by the
+      // `examples` field above) drops per-example descriptions, so surface the same
+      // examples as described {description, sql} JSON here where the descriptions survive.
+      "vgi.example_queries": JSON.stringify(
+        spec.examples.map((e) => ({ description: e.description, sql: e.sql })),
+      ),
     },
     onBind: () => ({ outputSchema: schema }),
     initialState: (p) => ({
