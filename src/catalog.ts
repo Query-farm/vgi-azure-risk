@@ -92,51 +92,29 @@ const CATALOG_TAGS: Record<string, string> = {
       sql: "SELECT id, app_id, display_name, risk_level, risk_state FROM azure.main.risky_service_principals() LIMIT 0",
     },
   ]),
-  // The agent-suitability suite (VGI520/VGI920), catalog only. `reference_sql` is the
-  // canonical fully-qualified solution (grader-only) — it drives static coverage (VGI520)
-  // so every object is exercised, and authenticated reference grading; `success_criteria`
-  // is the LLM-judge rubric used when the sim runs unauthenticated (a live risk scan needs
-  // an azure_graph secret and returns tenant-specific, non-deterministic data, so an
-  // exact-compare reference can only be graded with real credentials). Neither reference_sql
-  // nor success_criteria is ever shown to the analyst.
+  // The agent-suitability suite (VGI520/VGI920), catalog only. Only each task's name +
+  // prompt is published here (VGI416); the grader fields live in the private sidecar
+  // vgi-agent-tests.yaml, keyed by task name, and are never shown to the analyst.
   "vgi.agent_test_tasks": JSON.stringify([
     {
       name: "list_at_risk_users",
       prompt: "List the users in the Entra tenant who are currently at risk, with their risk level.",
-      reference_sql:
-        "SELECT user_principal_name, risk_level FROM azure.main.risky_users() WHERE _row_kind IS NULL AND risk_state = 'atRisk' ORDER BY user_principal_name",
-      success_criteria:
-        "The answer queries risky_users(), filters to data rows (_row_kind IS NULL) with risk_state = 'atRisk', and returns user_principal_name and risk_level.",
     },
     {
       name: "reconcile_detection_verdict",
       prompt: "For each recent risk detection, what is the affected user's current risk verdict?",
-      reference_sql:
-        "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL",
-      success_criteria:
-        "The answer joins risk_detections() to risky_users() on user_id = id (both filtered to _row_kind IS NULL) and reads risk_state from risky_users rather than from the detection, explaining that the detection's own risk_state can be stale.",
     },
     {
       name: "high_risk_service_principals",
       prompt: "Which service principals (workload identities) in the tenant are currently high risk?",
-      reference_sql:
-        "SELECT display_name, app_id FROM azure.main.risky_service_principals() WHERE _row_kind IS NULL AND risk_level = 'high' ORDER BY display_name",
-      success_criteria:
-        "The answer queries risky_service_principals(), filters to data rows (_row_kind IS NULL) with risk_level = 'high', and returns the service principal display_name and app_id.",
     },
     {
       name: "save_watermark",
       prompt: "After syncing risky users, how do I get the cursor to use for the next incremental sync?",
-      reference_sql: "SELECT _watermark_next FROM azure.main.risky_users() WHERE _row_kind = 'marker'",
-      success_criteria:
-        "The answer selects _watermark_next from the marker row (_row_kind = 'marker') of risky_users() and explains it should be replayed via the since argument.",
     },
     {
       name: "browse_collections",
       prompt: "What risk feeds does this worker expose, and which table function serves each?",
-      reference_sql: "SELECT collection, table_function FROM azure.main.risk_collections ORDER BY collection",
-      success_criteria:
-        "The answer reads risk_collections and lists the risk feeds (risky users, risky service principals, risk detections) alongside the table function that serves each.",
     },
   ]),
 };

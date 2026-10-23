@@ -1,0 +1,36 @@
+# Private grader sidecar for `vgi-lint simulate` (and `lint`'s VGI520 coverage). The worker
+# publishes only task names + prompts in `vgi.agent_test_tasks` (src/catalog.ts); these
+# grader fields are keyed by that name and never sent to the analyst agent.
+#
+# `reference_sql` is the canonical fully-qualified solution (grader-only) — it drives static
+# coverage (VGI520) so every object is exercised, and authenticated reference grading;
+# `success_criteria` is the LLM-judge rubric used when the sim runs unauthenticated (a live
+# risk scan needs an azure_graph secret and returns tenant-specific, non-deterministic data,
+# so an exact-compare reference can only be graded with real credentials). Neither
+# reference_sql nor success_criteria is ever shown to the analyst.
+tasks:
+  - name: list_at_risk_users
+    reference_sql: >-
+      SELECT user_principal_name, risk_level FROM azure.main.risky_users() WHERE _row_kind IS NULL AND risk_state = 'atRisk' ORDER BY user_principal_name
+    success_criteria: >-
+      The answer queries risky_users(), filters to data rows (_row_kind IS NULL) with risk_state = 'atRisk', and returns user_principal_name and risk_level.
+  - name: reconcile_detection_verdict
+    reference_sql: >-
+      SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL
+    success_criteria: >-
+      The answer joins risk_detections() to risky_users() on user_id = id (both filtered to _row_kind IS NULL) and reads risk_state from risky_users rather than from the detection, explaining that the detection's own risk_state can be stale.
+  - name: high_risk_service_principals
+    reference_sql: >-
+      SELECT display_name, app_id FROM azure.main.risky_service_principals() WHERE _row_kind IS NULL AND risk_level = 'high' ORDER BY display_name
+    success_criteria: >-
+      The answer queries risky_service_principals(), filters to data rows (_row_kind IS NULL) with risk_level = 'high', and returns the service principal display_name and app_id.
+  - name: save_watermark
+    reference_sql: >-
+      SELECT _watermark_next FROM azure.main.risky_users() WHERE _row_kind = 'marker'
+    success_criteria: >-
+      The answer selects _watermark_next from the marker row (_row_kind = 'marker') of risky_users() and explains it should be replayed via the since argument.
+  - name: browse_collections
+    reference_sql: >-
+      SELECT collection, table_function FROM azure.main.risk_collections ORDER BY collection
+    success_criteria: >-
+      The answer reads risk_collections and lists the risk feeds (risky users, risky service principals, risk detections) alongside the table function that serves each.
