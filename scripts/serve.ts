@@ -55,7 +55,7 @@ const catalogInterface = new ReadOnlyCatalogInterface(makeCatalog(functions), re
 serveVgiWorker({
   name: "risk",
   doc: "Microsoft Entra ID Protection risk feed: risky_users, risky_service_principals, and risk_detections as incremental DuckDB table functions over Microsoft Graph.",
-  version: "0.1.0",
+  version: "0.2.0",
   repositoryUrl: "https://github.com/Query-farm/vgi-azure-risk",
   serverId: "vgi-azure-risk",
   registry,
