@@ -59,6 +59,9 @@ export function makeRiskFunction(
   const schema = schemaFor(spec);
   return defineTableFunction<Args, State>({
     name: spec.fn,
+    // Request the azure_graph secret at bind so the connector delivers it (a
+    // missing secret resolves to nothing, so credential-free LIMIT 0 binds still work).
+    requiredSecrets: ["azure_graph"],
     description: spec.description,
     args: { since: new Utf8(), safety_lag: new Utf8(), page_size: new Int64() },
     // Optional args → argDefaults, so they are addressable by name (since := …).
