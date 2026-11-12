@@ -11,11 +11,32 @@ const ISSUES = `${REPO}/issues`;
 export const AZURE_GRAPH_SECRET: SecretTypeDescriptor = {
   name: "azure_graph",
   description: "Microsoft Entra app-only (client-credentials) credentials for Microsoft Graph",
-  schema: new Schema([
-    new Field("tenant_id", new Utf8(), true),
-    new Field("client_id", new Utf8(), true),
-    new Field("client_secret", new Utf8(), true, new Map([["redact", "true"]])),
-  ]),
+  schema: new Schema(
+    [
+      new Field(
+        "tenant_id",
+        new Utf8(),
+        true,
+        new Map([["vgi_doc", "Directory (tenant) ID from the Entra app registration's Overview page."]]),
+      ),
+      new Field(
+        "client_id",
+        new Utf8(),
+        true,
+        new Map([["vgi_doc", "Application (client) ID from the Entra app registration's Overview page."]]),
+      ),
+      new Field(
+        "client_secret",
+        new Utf8(),
+        true,
+        new Map([
+          ["redact", "true"],
+          ["vgi_doc", "Client secret value created under the app registration's Certificates & secrets page."],
+        ]),
+      ),
+    ],
+    new Map([["vgi_doc_url", "https://learn.microsoft.com/en-us/graph/auth-v2-service"]]),
+  ),
 };
 
 /** Catalog-level tags: docs, discovery, provenance, and the agent-test suite. */
@@ -39,15 +60,13 @@ const CATALOG_TAGS: Record<string, string> = {
   "vgi.doc_md":
     "## Microsoft Entra ID Protection Risk\n\n" +
     "Incremental access to the Microsoft Entra ID Protection risk feed via Microsoft Graph, exposed as " +
-    "three DuckDB table functions.\n\n" +
-    "- **`risky_users`** — current per-user risk state (source of truth for the verdict).\n" +
-    "- **`risky_service_principals`** — current per-service-principal (workload identity) risk state.\n" +
-    "- **`risk_detections`** — immutable risk detection events.\n\n" +
+    "DuckDB table functions: current per-user and per-workload-identity risk state (the source of truth " +
+    "for the verdict) and the immutable stream of risk detection events.\n\n" +
     "Each function returns data rows plus a single marker row (`_row_kind = 'marker'`) whose " +
     "`_watermark_next` column holds the ISO-8601 instant to persist and replay as the next scan's `since`. " +
     "Call with no arguments for a full sync from epoch; pass `since := '<_watermark_next>'` for an " +
-    "incremental sync. Reconcile `risk_detections` against `risky_users` (join `user_id` <-> `id`) for the " +
-    "current verdict. Requires an app-only `azure_graph` secret, the three `Identity*.Read.All` Graph " +
+    "incremental sync. Always reconcile a detection event against the affected user's current risk state " +
+    "for the verdict. Requires an app-only `azure_graph` secret, the three `Identity*.Read.All` Graph " +
     "permissions, and an Entra ID P2 license.",
   "vgi.keywords": JSON.stringify([
     "azure",
@@ -134,12 +153,10 @@ const SCHEMA_TAGS: Record<string, string> = {
     "risk_detections against risky_users (join user_id <-> id) for the current verdict.",
   "vgi.doc_md":
     "## Entra ID Protection risk functions\n\n" +
-    "| Function | Kind | Watermark field | Returns |\n" +
-    "| --- | --- | --- | --- |\n" +
-    "| `risky_users` | State | `risk_last_updated_date_time` | current user risk + watermark |\n" +
-    "| `risky_service_principals` | State | `risk_last_updated_date_time` | current SP risk + watermark |\n" +
-    "| `risk_detections` | Event | `detected_date_time` | risk detection events + watermark |\n\n" +
-    "All three share the same shape: read data rows with `WHERE _row_kind IS NULL`, and take the next " +
+    "Two kinds of feed: **state** feeds (one mutable row per user or service principal, watermarked on " +
+    "`risk_last_updated_date_time`) and an **event** feed of immutable detections (watermarked on " +
+    "`detected_date_time`). The `risk_collections` view indexes them without credentials.\n\n" +
+    "Every feed shares the same shape: read data rows with `WHERE _row_kind IS NULL`, and take the next " +
     "cursor from the single marker row's `_watermark_next`. Each requires an app-only `azure_graph` secret " +
     "and an Entra ID P2 license.",
   "vgi.keywords": JSON.stringify([
