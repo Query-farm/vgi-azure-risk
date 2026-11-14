@@ -84,3 +84,7 @@ ATTACH 'azure' AS azure (TYPE vgi, LOCATION '/path/to/vgi-azure-risk/bin/vgi-azu
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Notebooks
+
+[Explore the executed watermark notebook](notebooks/README.md): compare late-event capture and duplicate observations using two synthetic snapshots through the real risk function.
