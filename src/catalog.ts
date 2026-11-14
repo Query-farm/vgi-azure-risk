@@ -146,7 +146,7 @@ const CATALOG_TAGS: Record<string, string> = {
     {
       name: "compromised_detection_types",
       prompt:
-        "Among risk detections for users whose CURRENT verdict is confirmed compromised, which detection types occur most often? Return one row per risk_event_type with the number of detections, most frequent first.",
+        "Among risk detections for users whose CURRENT verdict is confirmed compromised, which detection types occur most often? Return exactly two columns, risk_event_type and detections (the count), one row per type, ordered by detections descending then risk_event_type ascending.",
     },
     {
       name: "browse_collections",

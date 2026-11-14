@@ -77,7 +77,7 @@ const RESULT_COLUMNS_TAIL: ResultColumn[] = [
 
 /** The mandatory §2c reconciliation: each detection with its user's CURRENT verdict. */
 export const RECONCILE_DETECTIONS_EXAMPLE: FnExample = {
-  sql: "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL",
+  sql: "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL ORDER BY d.id",
   description: "Reconcile detections against the current per-user verdict (mandatory §2c join)",
 };
 
