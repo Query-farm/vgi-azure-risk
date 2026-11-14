@@ -79,3 +79,12 @@ folder, and experiment copies include the helpers, launcher, assets, runner and
 locked environment files. Charts and logs are ignored; successful outputs remain
 embedded in the main notebook. See [STANDARD.md](STANDARD.md) for presentation
 conventions.
+
+## SQL credential isolation
+
+The notebook creates Haybarn with a fresh temporary `secret_directory` and
+`allow_persistent_secrets=False` before attaching workers. It fully drains and
+checks an empty secret inventory, then creates only explicitly `TEMPORARY`
+public fixture secrets and verifies their `persistent=false`, `storage=memory`
+metadata. Cleanup removes the temporary directory after closing the connection.
+Existing user SQL secrets are neither read, modified nor deleted.
