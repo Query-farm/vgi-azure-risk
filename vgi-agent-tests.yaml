@@ -29,6 +29,11 @@ tasks:
       SELECT _watermark_next FROM azure.main.risky_users() WHERE _row_kind = 'marker'
     success_criteria: >-
       The answer selects _watermark_next from the marker row (_row_kind = 'marker') of risky_users() and explains it should be replayed via the since argument.
+  - name: compromised_detection_types
+    reference_sql: >-
+      SELECT d.risk_event_type, count(*) AS detections FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL AND u.risk_state = 'confirmedCompromised' GROUP BY d.risk_event_type ORDER BY detections DESC, d.risk_event_type
+    success_criteria: >-
+      The answer joins risk_detections() to risky_users() on user_id = id (both filtered to _row_kind IS NULL), filters on the USER's current risky_users.risk_state = 'confirmedCompromised' (not the detection's own, possibly stale, risk_state), groups by risk_event_type with a count of detections, and orders by that count descending. An answer that filters on risk_detections.risk_state, skips the join, or omits the _row_kind filter is wrong.
   - name: browse_collections
     reference_sql: >-
       SELECT collection, table_function FROM azure.main.risk_collections ORDER BY collection

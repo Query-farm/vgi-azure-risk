@@ -4,6 +4,15 @@
 
 import { Schema, Field, Utf8 } from "@query-farm/apache-arrow";
 import type { CatalogDescriptor, SecretTypeDescriptor, ViewDescriptor, VgiFunction } from "@query-farm/vgi";
+import {
+  RECONCILE_DETECTIONS_EXAMPLE,
+  STALE_DETECTION_STATE_EXAMPLE,
+  USER_DETECTION_ROLLUP_EXAMPLE,
+  type FnExample,
+} from "./schema.js";
+
+/** A shared example constant as a described {description, sql} vgi.example_queries entry. */
+const describedExample = (e: FnExample) => ({ description: e.description, sql: e.sql });
 
 const REPO = "https://github.com/Query-farm/vgi-azure-risk";
 const ISSUES = `${REPO}/issues`;
@@ -135,6 +144,11 @@ const CATALOG_TAGS: Record<string, string> = {
       prompt: "After syncing risky users, how do I get the cursor to use for the next incremental sync?",
     },
     {
+      name: "compromised_detection_types",
+      prompt:
+        "Among risk detections for users whose CURRENT verdict is confirmed compromised, which detection types occur most often? Return one row per risk_event_type with the number of detections, most frequent first.",
+    },
+    {
       name: "browse_collections",
       prompt: "What risk feeds does this worker expose, and which table function serves each?",
     },
@@ -195,10 +209,9 @@ const SCHEMA_TAGS: Record<string, string> = {
       description: "Incremental sync of risk detections from a saved watermark",
       sql: "SELECT id, user_id, risk_event_type FROM azure.main.risk_detections(since := '<_watermark_next>') WHERE _row_kind IS NULL",
     },
-    {
-      description: "Reconcile detections against the current per-user verdict (mandatory §2c join)",
-      sql: "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL",
-    },
+    describedExample(RECONCILE_DETECTIONS_EXAMPLE),
+    describedExample(STALE_DETECTION_STATE_EXAMPLE),
+    describedExample(USER_DETECTION_ROLLUP_EXAMPLE),
     {
       description: "High-risk service principals",
       sql: "SELECT id, app_id, display_name FROM azure.main.risky_service_principals() WHERE _row_kind IS NULL AND risk_level = 'high'",

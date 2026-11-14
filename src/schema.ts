@@ -70,6 +70,41 @@ const RESULT_COLUMNS_TAIL: ResultColumn[] = [
   },
 ];
 
+// --- Composed examples: queries that combine two of this catalog's feeds. Each SQL is
+// defined once here and referenced from both the driving function's `examples` (so the
+// agent simulator, which shows only per-object examples, sees it) and the schema-level
+// vgi.example_queries in catalog.ts.
+
+/** The mandatory §2c reconciliation: each detection with its user's CURRENT verdict. */
+export const RECONCILE_DETECTIONS_EXAMPLE: FnExample = {
+  sql: "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL",
+  description: "Reconcile detections against the current per-user verdict (mandatory §2c join)",
+};
+
+/** Detections whose own (frozen) risk_state no longer matches the user's current verdict. */
+export const STALE_DETECTION_STATE_EXAMPLE: FnExample = {
+  sql:
+    "SELECT d.id, d.user_principal_name, d.risk_event_type, d.risk_state AS detection_state, u.risk_state AS current_verdict " +
+    "FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id " +
+    "WHERE d._row_kind IS NULL AND u._row_kind IS NULL AND d.risk_state IS DISTINCT FROM u.risk_state " +
+    "ORDER BY d.detected_date_time DESC, d.id",
+  description:
+    "Detections whose own risk_state is stale: the detection still says one thing (e.g. atRisk) while the user's current verdict in risky_users has moved on (e.g. remediated or confirmedCompromised)",
+};
+
+/** Per-user triage roll-up: open-risk users with their detection count, latest detection and event types. */
+export const USER_DETECTION_ROLLUP_EXAMPLE: FnExample = {
+  sql:
+    "SELECT u.user_principal_name, u.risk_level, u.risk_state, count(d.id) AS detections, " +
+    "max(d.detected_date_time) AS last_detected, list(DISTINCT d.risk_event_type ORDER BY d.risk_event_type) FILTER (WHERE d.id IS NOT NULL) AS event_types " +
+    "FROM azure.main.risky_users() u LEFT JOIN azure.main.risk_detections() d ON d.user_id = u.id AND d._row_kind IS NULL " +
+    "WHERE u._row_kind IS NULL AND u.risk_state IN ('atRisk', 'confirmedCompromised') " +
+    "GROUP BY u.user_principal_name, u.risk_level, u.risk_state " +
+    "ORDER BY detections DESC, u.user_principal_name",
+  description:
+    "Triage list: every user currently atRisk or confirmedCompromised with their number of risk detections, the latest detection time, and the distinct detection types (users with no detections show 0)",
+};
+
 // --- STATE collections (cursor B, riskLastUpdatedDateTime): riskyUsers / riskySPs.
 // One row per principal that MUTATES IN PLACE; risk state is a field change, never a
 // tombstone (SPEC §2c). These are the SOURCE OF TRUTH for current riskState and the
@@ -163,6 +198,7 @@ export const RISKY_USERS: RiskCollectionSpec = {
       sql: "SELECT id, user_principal_name, risk_level, risk_state FROM azure.main.risky_users() WHERE _row_kind IS NULL AND risk_state = 'atRisk'",
       description: "Full sync of users currently at risk (data rows only)",
     },
+    USER_DETECTION_ROLLUP_EXAMPLE,
     {
       sql: "SELECT id, user_principal_name, risk_detail FROM azure.main.risky_users(since := '<_watermark_next>') WHERE _row_kind IS NULL",
       description: "Incremental sync replaying a previously saved watermark",
@@ -368,10 +404,8 @@ export const RISK_DETECTIONS: RiskCollectionSpec = {
       sql: "SELECT id, user_id, risk_event_type, detected_date_time FROM azure.main.risk_detections() WHERE _row_kind IS NULL",
       description: "Full sync of all risk detections (data rows only)",
     },
-    {
-      sql: "SELECT d.id, d.risk_event_type, u.risk_state AS current_verdict FROM azure.main.risk_detections() d JOIN azure.main.risky_users() u ON d.user_id = u.id WHERE d._row_kind IS NULL AND u._row_kind IS NULL",
-      description: "Reconcile detections against the current per-user verdict (mandatory §2c join)",
-    },
+    RECONCILE_DETECTIONS_EXAMPLE,
+    STALE_DETECTION_STATE_EXAMPLE,
     {
       sql: "SELECT _watermark_next FROM azure.main.risk_detections() WHERE _row_kind = 'marker'",
       description: "Read the watermark to persist for the next sync",

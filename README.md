@@ -52,6 +52,20 @@ CREATE SECRET azure_sp (TYPE azure_graph, TENANT_ID '<tenant-guid>', CLIENT_ID '
 
 For this worker the service principal needs the Microsoft Graph application permissions `IdentityRiskyUser.Read.All`, `IdentityRiskEvent.Read.All` and `IdentityRiskyServicePrincipal.Read.All` (the service-principal scope is not covered by the user scope), and the tenant needs an Entra ID P2 license (Identity Protection returns 403 without it).
 
+With the secret in place, the feeds combine in plain SQL. This triage list joins the current per-user verdict in `risky_users` to the detection events in `risk_detections`, giving every user who is currently at risk or confirmed compromised with their number of detections, the latest detection time and the distinct detection types:
+
+```sql
+SELECT u.user_principal_name, u.risk_level, u.risk_state,
+       count(d.id) AS detections,
+       max(d.detected_date_time) AS last_detected,
+       list(DISTINCT d.risk_event_type ORDER BY d.risk_event_type) FILTER (WHERE d.id IS NOT NULL) AS event_types
+FROM azure.main.risky_users() u
+LEFT JOIN azure.main.risk_detections() d ON d.user_id = u.id AND d._row_kind IS NULL
+WHERE u._row_kind IS NULL AND u.risk_state IN ('atRisk', 'confirmedCompromised')
+GROUP BY u.user_principal_name, u.risk_level, u.risk_state
+ORDER BY detections DESC, u.user_principal_name;
+```
+
 ## Development
 
 Requires [Bun](https://bun.sh). `bun install` also fetches the shared `@vgi-azure/graph-core` package from GitHub.
