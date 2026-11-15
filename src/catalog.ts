@@ -292,11 +292,9 @@ export function makeCatalog(functions: VgiFunction[]): CatalogDescriptor {
     name: "azure",
     defaultSchema: "main",
     comment:
-      "Microsoft Entra ID Protection risk feed (risky users / risk detections / risky service " +
-      "principals) via Microsoft Graph lagged-watermark — vgi-azure-risk. Perms: " +
-      "IdentityRiskyUser.Read.All + IdentityRiskEvent.Read.All + IdentityRiskyServicePrincipal.Read.All " +
-      "(the SP scope is REQUIRED, not subsumed by the user scope). Requires Entra ID P2. " +
-      "risk_detections consumers MUST reconcile against risky_users for the current verdict (§2c).",
+      "Microsoft Entra ID Protection risk data from Microsoft Graph as SQL tables: risky users, risky " +
+      "service principals and risk detection events, synced incrementally by watermark. Needs an " +
+      "app-only Microsoft Graph credential and an Entra ID P2 license.",
     sourceUrl: REPO,
     tags: CATALOG_TAGS,
     secretTypes: [AZURE_GRAPH_SECRET],
