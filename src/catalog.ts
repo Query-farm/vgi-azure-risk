@@ -48,6 +48,18 @@ export const AZURE_GRAPH_SECRET: SecretTypeDescriptor = {
   ),
 };
 
+// Upstream references rendered into the catalog docs (VGI183: link out to the service, API
+// docs and app-registration/permission docs this worker actually calls).
+const SOURCES_MD =
+  "### Sources and references\n\n" +
+  "- [Microsoft Entra ID Protection](https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection) — what user/workload risk means and the P2 licensing requirement\n" +
+  "- [Identity Protection Graph API overview](https://learn.microsoft.com/en-us/graph/api/resources/identityprotection-overview) — the riskyUsers / riskyServicePrincipals / riskDetections resources\n" +
+  "- [List riskyUsers](https://learn.microsoft.com/en-us/graph/api/riskyuser-list) — `risky_users`\n" +
+  "- [List riskDetections](https://learn.microsoft.com/en-us/graph/api/riskdetection-list) — `risk_detections`\n" +
+  "- [List riskyServicePrincipals](https://learn.microsoft.com/en-us/graph/api/identityprotectionroot-list-riskyserviceprincipals) — `risky_service_principals`";
+const SOURCES_LLM =
+  " Upstream Microsoft docs: Microsoft Entra ID Protection https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection; Identity Protection Graph API overview https://learn.microsoft.com/en-us/graph/api/resources/identityprotection-overview; List riskyUsers https://learn.microsoft.com/en-us/graph/api/riskyuser-list; List riskDetections https://learn.microsoft.com/en-us/graph/api/riskdetection-list; List riskyServicePrincipals https://learn.microsoft.com/en-us/graph/api/identityprotectionroot-list-riskyserviceprincipals.";
+
 /** Catalog-level tags: docs, discovery, provenance, and the agent-test suite. */
 const CATALOG_TAGS: Record<string, string> = {
   "vgi.title": "Entra ID Protection Risk",
@@ -65,7 +77,7 @@ const CATALOG_TAGS: Record<string, string> = {
     "because a detection's own risk_state can be stale. Requires an app-only azure_graph secret " +
     "(tenant_id, client_id, client_secret) with IdentityRiskyUser.Read.All + IdentityRiskEvent.Read.All + " +
     "IdentityRiskyServicePrincipal.Read.All (the SP scope is not subsumed by the user scope), and an " +
-    "Entra ID P2 license (Identity Protection 403s without P2).",
+    "Entra ID P2 license (Identity Protection 403s without P2)." + SOURCES_LLM,
   "vgi.doc_md":
     "## Microsoft Entra ID Protection Risk\n\n" +
     "Incremental access to the Microsoft Entra ID Protection risk feed via Microsoft Graph, exposed as " +
@@ -76,7 +88,7 @@ const CATALOG_TAGS: Record<string, string> = {
     "Call with no arguments for a full sync from epoch; pass `since := '<_watermark_next>'` for an " +
     "incremental sync. Always reconcile a detection event against the affected user's current risk state " +
     "for the verdict. Requires an app-only `azure_graph` secret, the three `Identity*.Read.All` Graph " +
-    "permissions, and an Entra ID P2 license.",
+    "permissions, and an Entra ID P2 license.\n\n" + SOURCES_MD,
   "vgi.keywords": JSON.stringify([
     "azure",
     "entra id",
