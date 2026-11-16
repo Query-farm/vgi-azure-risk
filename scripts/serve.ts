@@ -52,7 +52,7 @@ for (const f of functions) registry.register(f);
 
 const catalogInterface = new ReadOnlyCatalogInterface(makeCatalog(functions), registry);
 
-serveVgiWorker({
+const server = serveVgiWorker({
   name: "risk",
   doc: "Microsoft Entra ID Protection risk feed: risky_users, risky_service_principals, and risk_detections as incremental DuckDB table functions over Microsoft Graph.",
   version: "0.4.2",
@@ -61,3 +61,7 @@ serveVgiWorker({
   registry,
   catalogInterface,
 });
+
+// bin/<worker> --http and ci/run-integration.sh read the bound port from this line
+// (PORT=0 binds any free port).
+console.log(`PORT:${server.port}`);

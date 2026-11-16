@@ -1,0 +1,70 @@
+# name: test/sql/offline.test
+# description: vgi-azure-risk without credentials or network: ATTACH, the advertised functions
+# and tables, and every catalog executable example (credential-free bind probes and
+# static manifests). Runs over every transport; the live Azure scans need an azure_graph
+# secret and are not exercised here.
+# group: [sql]
+
+require-env VGI_TEST_WORKER
+
+# Transport failures must fail the suite rather than silently skip it.
+set ignore_error_messages
+
+statement ok
+ATTACH 'azure' AS azure (TYPE vgi, LOCATION '{VGI_TEST_WORKER}');
+
+query TT
+SELECT DISTINCT schema_name, function_name FROM duckdb_functions() WHERE database_name = 'azure' ORDER BY ALL;
+----
+main	risk_detections
+main	risky_service_principals
+main	risky_users
+
+query TT
+SELECT schema_name, table_name FROM duckdb_tables() WHERE database_name = 'azure'
+UNION ALL SELECT schema_name, view_name FROM duckdb_views() WHERE database_name = 'azure' ORDER BY ALL;
+----
+main	risk_collections
+
+# risky_users_bind_probe: Bind risky_users and expose its result columns (credential-free; drop LIMIT 0 and attach an azure_graph secret to sync real data)
+query TT
+SELECT column_name, column_type FROM (DESCRIBE SELECT id, user_principal_name, risk_level, risk_state FROM azure.main.risky_users() LIMIT 0);
+----
+id	VARCHAR
+user_principal_name	VARCHAR
+risk_level	VARCHAR
+risk_state	VARCHAR
+
+query I
+SELECT count(*) FROM (SELECT id, user_principal_name, risk_level, risk_state FROM azure.main.risky_users() LIMIT 0);
+----
+0
+
+# risk_detections_bind_probe: Bind risk_detections and expose its result columns (credential-free; attach an azure_graph secret to sync real data)
+query TT
+SELECT column_name, column_type FROM (DESCRIBE SELECT id, user_id, risk_event_type, detected_date_time FROM azure.main.risk_detections() LIMIT 0);
+----
+id	VARCHAR
+user_id	VARCHAR
+risk_event_type	VARCHAR
+detected_date_time	VARCHAR
+
+query I
+SELECT count(*) FROM (SELECT id, user_id, risk_event_type, detected_date_time FROM azure.main.risk_detections() LIMIT 0);
+----
+0
+
+# risky_service_principals_bind_probe: Bind risky_service_principals and expose its result columns (credential-free; attach an azure_graph secret to sync real data)
+query TT
+SELECT column_name, column_type FROM (DESCRIBE SELECT id, app_id, display_name, risk_level, risk_state FROM azure.main.risky_service_principals() LIMIT 0);
+----
+id	VARCHAR
+app_id	VARCHAR
+display_name	VARCHAR
+risk_level	VARCHAR
+risk_state	VARCHAR
+
+query I
+SELECT count(*) FROM (SELECT id, app_id, display_name, risk_level, risk_state FROM azure.main.risky_service_principals() LIMIT 0);
+----
+0
